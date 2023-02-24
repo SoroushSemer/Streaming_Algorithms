@@ -74,12 +74,14 @@ def task1B_bloomSetup(elements_in_set):
     #setup the bloom filter memory to be able to filter streaming elements
     bloom_hash_len = memory1b[4] = 2 # number of hash functions
     bloom_hash_start = 5 #starting index of hash functions
-    for i in range(bloom_hash_start, bloom_hash_start+bloom_hash_len): #for each of the hash functions
-        memory1b[i] = int(random()*1000)  #set the value to be a random int
+    # for i in range(bloom_hash_start, bloom_hash_start+bloom_hash_len): #for each of the hash functions
+    #     memory1b[i] = int(random()*1000)  #set the value to be a random int
 
-    bloom_buckets_len = memory1b[bloom_hash_start+bloom_hash_len] = 150000 #number of buckets in bit array
-    bloom_buckets_start = bloom_hash_start+bloom_hash_len+1 #start of buckets
-
+    # bloom_buckets_len = memory1b[bloom_hash_start+bloom_hash_len] = 100000 #number of buckets in bit array
+    # bloom_buckets_start = bloom_hash_start+bloom_hash_len+1 #start of buckets
+    bloom_buckets_len = 160000
+    bloom_hash_len = 8
+    bloom_buckets_start = 0
     for i in range(bloom_buckets_start, bloom_buckets_start+bloom_buckets_len): #clear all buckets to 0
         memory1b[i] = False
     
@@ -88,43 +90,127 @@ def task1B_bloomSetup(elements_in_set):
         element = element.split(", ") #split on commas to make array of rgb values
         
         #divide by 100 to allow values to be rounded to the nearest 100 allows for abs(r1 - r2) < 100
-        total = ""
-        for i in element:
-            total += i 
-        for seed in range(bloom_hash_start, bloom_hash_start+bloom_hash_len):
-            pos = mmh3.hash(total, memory1b[seed]) % bloom_buckets_len 
+        # total = ""
+        # for i in element:
+        #     total += i 
+       
+        # for seed in range(bloom_hash_start, bloom_hash_start+bloom_hash_len):
+        for seed in range(bloom_hash_len):
+            # pos = mmh3.hash(total, memory1b[seed]) % bloom_buckets_len 
+            # pos = mmh3.hash(total, seed) % bloom_buckets_len 
+            if(seed % 4 == 0):
+                pos = mmh3.hash(element[0], seed) % bloom_buckets_len 
+            elif(seed % 4 == 1):
+                pos = mmh3.hash(element[1], seed) % bloom_buckets_len 
+            elif(seed % 4 == 2):
+                pos = mmh3.hash(element[2], seed) % bloom_buckets_len 
+            # elif(seed % 5 == 3):
+            #     pos = mmh3.hash(str( int(element[0]) + int(element[1]) +  int(element[2]) ), seed) % bloom_buckets_len 
+            elif(seed % 4 == 3):
+                pos = mmh3.hash(element[0] +"," +element[1] + "," +element[2] , seed) % bloom_buckets_len 
             memory1b[bloom_buckets_start+pos] = True
     return 
-    
+     
 def task1B_bloomStream(element):
     #[TODO]#
     #procss the element, using at most the 1000 dimensions of memory
     #return True if the element is determined to be in the bloom filter set
     #result = True if random() < .005 else False
     
-    bloom_hash_len = memory1b[4]# number of hash functions
-    bloom_hash_start = 5 #starting index of hash functions
-    bloom_buckets_len = memory1b[bloom_hash_start+bloom_hash_len] #number of buckets in bit array
-    bloom_buckets_start = bloom_hash_start+bloom_hash_len+1 #start of buckets
+    # bloom_hash_len = memory1b[4]# number of hash functions
+    # bloom_hash_start = 5 #starting index of hash functions
+    # bloom_buckets_len = memory1b[bloom_hash_start+bloom_hash_len] #number of buckets in bit array
+    # bloom_buckets_start = bloom_hash_start+bloom_hash_len+1 #start of buckets
+    bloom_buckets_len = 160000
+    bloom_hash_len = 8
+    bloom_buckets_start = 0
 
     element = element[1:-1] # pull off parenthesis from string
     element = element.split(", ") #split on commas to make array of rgb values
     
     #divide by 100 to allow values to be rounded to the nearest 100 allows for abs(r1 - r2) < 100
 
-    for r in range(-1, 2):
-        for g in range(-1 ,2 ):
-            for b in range(-1, 2):
-                we_good = True
-                total = str(int(element[0])+r)+","+str(int(element[1])+g)+","+str(int(element[2])+b)
-                for seed in range(bloom_hash_start, bloom_hash_start+bloom_hash_len):
-                    pos = mmh3.hash(total, memory1b[seed]) % bloom_buckets_len
-                    if(memory1b[bloom_buckets_start+pos]==False):
-                        we_good = False
-                        break
-                if we_good:
-                    return True         
-    return False
+    # for r in range(-1, 2):
+    #     for g in range(-1 ,2 ):
+    #         for b in range(-1, 2):
+    #             we_good = True
+    #             total = str(int(element[0])+r)+","+str(int(element[1])+g)+","+str(int(element[2])+b)
+    #             # for seed in range(bloom_hash_start, bloom_hash_start+bloom_hash_len):
+    #             for seed in range(bloom_hash_len):
+    #                 # pos = mmh3.hash(total, memory1b[seed]) % bloom_buckets_len
+    #                 pos = mmh3.hash(total, seed) % bloom_buckets_len
+    #                 if(memory1b[bloom_buckets_start+pos]==False):
+    #                     we_good = False
+    #                     break
+    #             if we_good:
+    #                 return True        
+    r_val = ""
+    g_val = ""
+    b_val = ""
+    for seed in range(bloom_hash_len):
+        if(seed % 4 == 0):
+            pos1 = mmh3.hash(element[0], seed) % bloom_buckets_len 
+            pos2 = mmh3.hash(str(int(element[0])-1), seed) % bloom_buckets_len 
+            pos3 = mmh3.hash(str(int(element[0])+1), seed) % bloom_buckets_len 
+            if(not (memory1b[bloom_buckets_start+pos1] or memory1b[bloom_buckets_start+pos2] or memory1b[bloom_buckets_start+pos3])):
+                return False
+            else:
+                if( memory1b[bloom_buckets_start+pos1]==True):
+                    r_val = element[0]
+                if( memory1b[bloom_buckets_start+pos2]==True):
+                    r_val = str(int(element[0])-1)
+                if( memory1b[bloom_buckets_start+pos3]==True):
+                    r_val = str(int(element[0])+1)
+        elif(seed % 4 == 1):
+            pos1 = mmh3.hash(element[1], seed) % bloom_buckets_len 
+            pos2 = mmh3.hash(str(int(element[1])-1), seed) % bloom_buckets_len 
+            pos3 = mmh3.hash(str(int(element[1])+1), seed) % bloom_buckets_len 
+            if(not (memory1b[bloom_buckets_start+pos1] or memory1b[bloom_buckets_start+pos2] or memory1b[bloom_buckets_start+pos3])):
+                return False
+            else:
+                if( memory1b[bloom_buckets_start+pos1]==True):
+                    g_val = element[1]
+                if( memory1b[bloom_buckets_start+pos2]==True):
+                    g_val = str(int(element[1])-1)
+                if( memory1b[bloom_buckets_start+pos3]==True):
+                    g_val = str(int(element[1])+1)
+        elif(seed % 4 == 2):
+            pos1 = mmh3.hash(element[2], seed) % bloom_buckets_len 
+            pos2 = mmh3.hash(str(int(element[2])-1), seed) % bloom_buckets_len 
+            pos3 = mmh3.hash(str(int(element[2])+1), seed) % bloom_buckets_len 
+            if(not (memory1b[bloom_buckets_start+pos1] or memory1b[bloom_buckets_start+pos2] or memory1b[bloom_buckets_start+pos3])):
+                return False
+            else:
+                if( memory1b[bloom_buckets_start+pos1]==True):
+                    b_val = element[2]
+                if( memory1b[bloom_buckets_start+pos2]==True):
+                    b_val = str(int(element[2])-1)
+                if( memory1b[bloom_buckets_start+pos3]==True):
+                    b_val = str(int(element[2])+1)
+        # elif(seed % 5 == 3):
+        #     total = (int(element[0])) + (int(element[1])) + (int(element[2]))
+        #     pos1 = mmh3.hash(str(total), seed) % bloom_buckets_len 
+        #     pos2 = mmh3.hash(str(total+1), seed) % bloom_buckets_len 
+        #     pos3 = mmh3.hash(str(total+2), seed) % bloom_buckets_len 
+        #     pos4 = mmh3.hash(str(total+3), seed) % bloom_buckets_len 
+        #     pos5 = mmh3.hash(str(total-1), seed) % bloom_buckets_len 
+        #     pos6 = mmh3.hash(str(total-2), seed) % bloom_buckets_len 
+        #     pos7 = mmh3.hash(str(total-3), seed) % bloom_buckets_len 
+        #     if(not (memory1b[bloom_buckets_start+pos1] or 
+        #             memory1b[bloom_buckets_start+pos2] or 
+        #             memory1b[bloom_buckets_start+pos3] or 
+        #             memory1b[bloom_buckets_start+pos4] or 
+        #             memory1b[bloom_buckets_start+pos5] or 
+        #             memory1b[bloom_buckets_start+pos6] or 
+        #             memory1b[bloom_buckets_start+pos7])):
+        #         return False
+        elif(seed %4 == 3):
+            pos = mmh3.hash(r_val+","+g_val+","+b_val,seed)%bloom_buckets_len
+            if(memory1b[bloom_buckets_start+pos]==False):
+                return False
+            
+
+    return True
 
     #replace the following line with the result
     # return result
@@ -196,7 +282,7 @@ if __name__ == "__main__": #[Uncomment peices to test]
 
         print("\n*******************************\n   Bloom Setup, Streaming: \n*******************************")
         
-        true_count = 0
+        # true_count = 0
         for line in infile:
             #remove \n and convert to int
             element = line.strip()
@@ -209,7 +295,7 @@ if __name__ == "__main__": #[Uncomment peices to test]
                 print("   1B:   bloom: %s" % str(result1b))
                 print(" [current memory size: %d]\n" % \
                     (getMemorySize(memory1b)))              
-                true_count+=1
+                # true_count+=1
             try:
                 memUsage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
                 if memUsage > peakMem: peakMem = memUsage
@@ -217,9 +303,12 @@ if __name__ == "__main__": #[Uncomment peices to test]
                 pass
     
     print("\n*******************************\n   Stream bloom Terminated \n*******************************")
-    print("true count: %s" % str(true_count))
+    # print("true count: %s" % str(true_count))
     # print(memory1b)
     if peakMem > 0:
         print("(peak memory usage was: ", peakMem, ")")
 
-        
+#(250, 0, 0)        
+#(100, 75, 50)
+#(100, 100, 100)
+#(100, 100, 50)
